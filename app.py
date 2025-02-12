@@ -1,89 +1,110 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 import numpy as np
+import yfinance as yf
 
 # Configuración de la página
 st.set_page_config(page_title="Stocks Dashboard", layout="wide")
 st.title("Stocks Dashboard - Export Prices and Futures")
 
-# Simulación de datos
-export_data = {
-    "Name": [
-        "Wheat, Canada 1 CWAD, St. Lawrence",
-        "Wheat, EU (France) Grade 1, Rouen",
-        "Wheat, US HRW (11.5%), Gulf",
-        "Wheat, US SRW, Gulf",
-        "Durum wheat, EU (France), Port la Nouvelle",
-        "Barley, Black Sea Feed",
-        "Barley, EU (France) Feed, Rouen",
-        "Maize, EU (France), Bordeaux",
-        "Maize, US 3YC, Gulf",
-        "Soyabeans, US 2Y (Gulf)"
-    ],
-    "€/t": [310, 235, 253, 235, 299, 222, 222, np.nan, 216, 404],
-    "$ /t": [328, 243, 261, 243, 308, 229, 229, np.nan, 223, 418],
-    "€/t (m/m var.)": ["-1%", "-1%", "+4%", "+3%", "-", "+6%", "+1%", "-", "+4%", "+4%"],
-    "$/t (m/m var.)": ["+2%", "-1%", "+4%", "+4%", "-", "+6%", "+1%", "-", "+4%", "+4%"],
-    "€/t (y/y var.)": ["-19%", "+8%", "-5%", "-1%", "-", "+22%", "+16%", "-", "+17%", "-7%"],
-    "$/t (y/y var.)": ["-22%", "-9%", "-9%", "-5%", "-", "+17%", "+11%", "-", "+13%", "-11%"]
-}
+# Función para obtener datos de avena y aluminio
+@st.cache_data
+def get_commodity_data(ticker):
+    asset = yf.Ticker(ticker)
+    asset_history = asset.history(period='2y')
+    asset_df = asset_history.reset_index()[['Date', 'Close']]
+    asset_df['Date'] = pd.to_datetime(asset_df['Date'])
+    return asset_df
 
-data_df = pd.DataFrame(export_data)
+# Obtener datos de avena y aluminio
+oats_data = get_commodity_data('ZO=F')
+aluminum_data = get_commodity_data('ALI=F')
 
-# Mostrar tabla interactiva
-st.subheader("Export Prices FOB on 04-02-2025")
-st.dataframe(data_df, use_container_width=True)
+st.subheader("Historical Data (from Yahoo Finance)")
 
-# Gráficos simulados
-st.subheader("Monthly Average Export Prices (FOB)")
+# Mostrar datos de avena y aluminio en columnas
+col1, col2 = st.columns(2)
 
-fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+with col1:
+    st.write("### Oats Data")
+    if not oats_data.empty:
+        st.write(oats_data.head(10))
+        fig_oats = go.Figure()
+        fig_oats.add_trace(go.Scatter(x=oats_data['Date'], y=oats_data['Close'], mode='lines', name='Oats Prices'))
+        fig_oats.update_layout(
+            title="Oats Prices Over Time",
+            xaxis_title="Date",
+            yaxis_title="Price (USD)",
+            template="plotly_white"
+        )
+        st.plotly_chart(fig_oats)
+    else:
+        st.write("No data available for oats.")
 
-# Primer gráfico - Trigo
-x_months = ["24-03", "24-06", "24-09", "24-12", "25-02"]
-wheat_prices = {
-    "Russia Milling (12.5%)": [220, 210, 200, 230, 237],
-    "France Grade 1, Rouen": [210, 215, 205, 220, 237],
-    "US SRW, Gulf": [200, 190, 210, 220, 236]
-}
+with col2:
+    st.write("### Aluminum Data")
+    if not aluminum_data.empty:
+        st.write(aluminum_data.head(10))
+        fig_aluminum = go.Figure()
+        fig_aluminum.add_trace(go.Scatter(x=aluminum_data['Date'], y=aluminum_data['Close'], mode='lines', name='Aluminum Prices'))
+        fig_aluminum.update_layout(
+            title="Aluminum Prices Over Time",
+            xaxis_title="Date",
+            yaxis_title="Price (USD)",
+            template="plotly_white"
+        )
+        st.plotly_chart(fig_aluminum)
+    else:
+        st.write("No data available for aluminum.")
 
-for label, values in wheat_prices.items():
-    ax[0].plot(x_months, values, label=label)
-ax[0].set_title("Wheat - Monthly Avg. Export Prices")
-ax[0].set_xlabel("Months")
-ax[0].set_ylabel("$/t")
-ax[0].legend()
-ax[0].grid(True)
+file_path_ordi = "Dades_Ordi_Cat_vs_Esp__Corregido.csv"
+file_path_cereals = "Dades_Cereals_Esp_2022-24__Corregido.csv"
 
-# Segundo gráfico - Maíz
-maize_prices = {
-    "Black Sea Feed": [180, 190, 200, 215, 223],
-    "Mais fob Atlantique": [170, 180, 190, 210, 223],
-    "US 3YC, Gulf": [160, 170, 185, 200, 217]
-}
+df_ordi = pd.read_csv(file_path_ordi)
+df_cereals = pd.read_csv(file_path_cereals)
 
-for label, values in maize_prices.items():
-    ax[1].plot(x_months, values, label=label)
-ax[1].set_title("Maize - Monthly Avg. Export Prices")
-ax[1].set_xlabel("Months")
-ax[1].set_ylabel("$/t")
-ax[1].legend()
-ax[1].grid(True)
+# Mostrar los datos en Streamlit
+st.subheader("Loaded Data from CSV Files")
 
-# Mostrar gráficos
-st.pyplot(fig)
+st.write("### Ordi Data (Catalonia vs Spain)")
+st.dataframe(df_ordi, use_container_width=True)
 
-# Futuros de precios
-st.subheader("EU (Milling) Wheat Futures Terms - 60 Days")
-fig2, ax2 = plt.subplots()
-futures_terms = [231, 237, 233]
-labels = ["Mar2025", "May2025", "Sep2025"]
-ax2.bar(labels, futures_terms, color=["blue", "purple", "yellow"])
-ax2.set_title("EU Wheat Futures Prices")
-ax2.set_ylabel("€/t")
+st.write("### Cereals Data (Spain 2022-2024)")
+st.dataframe(df_cereals, use_container_width=True)
 
-st.pyplot(fig2)
+# Graficar datos de ambos CSVs en la misma gráfica
+st.subheader("Comparison of Ordi and Cereals Data")
+fig_ordi = go.Figure()
+fig_cereals = go.Figure()
+
+for column in df_ordi.columns[2:]:  # Excluir las primeras dos columnas si son identificadores
+    fig_ordi.add_trace(go.Scatter(x=df_ordi['Date'], y=df_ordi[column], mode='lines', name=f'Ordi - {column}'))
+
+for column in df_cereals.columns[2:]:  # Excluir las primeras dos columnas si son identificadores
+    fig_cereals.add_trace(go.Scatter(x=df_cereals['Date'], y=df_cereals[column], mode='lines', name=f'Cereals - {column}'))
+
+fig_ordi.update_layout(
+    title="Ordi vs Cereals Prices Over Time",
+    xaxis_title="Week",
+    yaxis_title="Price (EUR/t)",
+    template="plotly_white"
+)
+
+fig_cereals.update_layout(
+    title="Ordi vs Cereals Prices Over Time",
+    xaxis_title="Week",
+    yaxis_title="Price (EUR/t)",
+    template="plotly_white"
+)
+
+st.plotly_chart(fig_ordi)
+st.plotly_chart(fig_cereals)
+
+
 
 # Footer
-st.write("Data simulated for demonstration purposes. Actual data may vary.")
+st.write("Data sourced from Yahoo Finance and uploaded CSV files.")
+
+
+
