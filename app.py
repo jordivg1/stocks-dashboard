@@ -104,7 +104,7 @@ st.plotly_chart(fig_cereals)
 
 
 # Footer
-st.write("Data sourced from Yahoo Finance and uploaded CSV files.")
+# st.write("Data sourced from Yahoo Finance and uploaded CSV files.")
 
 
 
