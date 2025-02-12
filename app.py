@@ -78,10 +78,10 @@ st.subheader("Comparison of Ordi and Cereals Data")
 fig_ordi = go.Figure()
 fig_cereals = go.Figure()
 
-for column in df_ordi.columns[2:]:  # Excluir las primeras dos columnas si son identificadores
+for column in df_ordi.columns[1:]:  # Excluir las primeras dos columnas si son identificadores
     fig_ordi.add_trace(go.Scatter(x=df_ordi['Date'], y=df_ordi[column], mode='lines', name=f'Ordi - {column}'))
 
-for column in df_cereals.columns[2:]:  # Excluir las primeras dos columnas si son identificadores
+for column in df_cereals.columns[1:]:  # Excluir las primeras dos columnas si son identificadores
     fig_cereals.add_trace(go.Scatter(x=df_cereals['Date'], y=df_cereals[column], mode='lines', name=f'Cereals - {column}'))
 
 fig_ordi.update_layout(
