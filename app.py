@@ -32,9 +32,17 @@ def get_commodity_data(ticker):
     asset_df['Date'] = pd.to_datetime(asset_df['Date'])
     return asset_df
 
-# Obtener datos de avena y aluminio
+# Carga de datos desde CSV
+file_path_ordi = "Dades_Ordi_Cat_vs_Esp__Corregido.csv"
+file_path_cereals = "Dades_Cereals_Esp_2022-24__Corregido.csv"
+file_path_gprd = "gprd.csv"
+
+df_ordi = pd.read_csv(file_path_ordi)
+df_cereals = pd.read_csv(file_path_cereals)
 oats_data = get_commodity_data('ZO=F')
 aluminum_data = get_commodity_data('ALI=F')
+gold_data = get_commodity_data('GC=F')
+df_gprd = pd.read_csv(file_path_gprd)
 
 st.subheader("Historical Data (from Yahoo Finance)")
 
@@ -42,45 +50,80 @@ st.subheader("Historical Data (from Yahoo Finance)")
 col1, col2 = st.columns(2)
 
 with col1:
-    st.write("### Oats Data")
+    st.write("### Gprd index")
     if not oats_data.empty:
-        st.write(oats_data.head(10))
+        st.write(df_gprd)
         fig_oats = go.Figure()
         fig_oats.add_trace(go.Scatter(x=oats_data['Date'], y=oats_data['Close'], mode='lines', name='Oats Prices'))
         fig_oats.update_layout(
             title="Oats Prices Over Time",
-            xaxis_title="Date",
+            xaxis=dict(
+                rangeselector=dict(
+                    buttons=list([
+                        dict(count=1, label="1m", step="month", stepmode="backward"),
+                        dict(count=6, label="6m", step="month", stepmode="backward"),
+                        dict(count=1, label="1y", step="year", stepmode="backward"),
+                        dict(label="All", step="all")
+                    ])
+                ),
+                rangeslider=dict(visible=True),  # Slider de rango
+                type="date"
+            ),
             yaxis_title="Price (USD)",
             template="plotly_white"
         )
+
         st.plotly_chart(fig_oats)
     else:
         st.write("No data available for oats.")
 
 with col2:
-    st.write("### Aluminum Data")
     if not aluminum_data.empty:
-        st.write(aluminum_data.head(10))
         fig_aluminum = go.Figure()
         fig_aluminum.add_trace(go.Scatter(x=aluminum_data['Date'], y=aluminum_data['Close'], mode='lines', name='Aluminum Prices'))
         fig_aluminum.update_layout(
             title="Aluminum Prices Over Time",
-            xaxis_title="Date",
+            xaxis=dict(
+                rangeselector=dict(
+                    buttons=list([
+                        dict(count=1, label="1m", step="month", stepmode="backward"),
+                        dict(count=6, label="6m", step="month", stepmode="backward"),
+                        dict(count=1, label="1y", step="year", stepmode="backward"),
+                        dict(label="All", step="all")
+                    ])
+                ),
+                rangeslider=dict(visible=True),  # Slider de rango
+                type="date"
+            ),
             yaxis_title="Price (USD)",
             template="plotly_white"
         )
         st.plotly_chart(fig_aluminum)
+        fig_gold = go.Figure()
+        fig_gold.add_trace(go.Scatter(x=gold_data['Date'], y=gold_data['Close'], mode='lines', name='Gold Prices'))
+        fig_gold.update_layout(
+            title="Gold Prices Over Time",
+            xaxis=dict(
+                rangeselector=dict(
+                    buttons=list([
+                        dict(count=1, label="1m", step="month", stepmode="backward"),
+                        dict(count=6, label="6m", step="month", stepmode="backward"),
+                        dict(count=1, label="1y", step="year", stepmode="backward"),
+                        dict(label="All", step="all")
+                    ])
+                ),
+                rangeslider=dict(visible=True),  # Slider de rango
+                type="date"
+            ),
+            yaxis_title="Price (USD)",
+            template="plotly_white"
+        )
+        st.plotly_chart(fig_gold)
     else:
         st.write("No data available for aluminum.")
 
-# Carga de datos desde CSV
-file_path_ordi = "Dades_Ordi_Cat_vs_Esp__Corregido.csv"
-file_path_cereals = "Dades_Cereals_Esp_2022-24__Corregido.csv"
 
-df_ordi = pd.read_csv(file_path_ordi)
-df_cereals = pd.read_csv(file_path_cereals)
-
-st.subheader("Loaded Data from CSV Files")
+st.subheader("Loaded Data from cereals")
 
 st.write("### Ordi Data (Catalonia vs Spain)")
 st.dataframe(df_ordi, use_container_width=True)
