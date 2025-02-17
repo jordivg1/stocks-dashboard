@@ -4,3 +4,8 @@ yfinance
 plotly
 pandas
 prophet
+streamlit_folium
+datetime
+requests
+folium
+prophet

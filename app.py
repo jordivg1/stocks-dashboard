@@ -4,6 +4,11 @@ import plotly.graph_objects as go
 import numpy as np
 import yfinance as yf
 from prophet import Prophet
+import folium
+from streamlit_folium import folium_static
+from datetime import datetime
+import requests
+
 
 
 # Configuración de la página
@@ -21,7 +26,70 @@ for news in news_mock:
     with st.sidebar:
         st.markdown(f"### [{news['title']}]({news['link']})")
         st.write(news['desc']) 
-                    
+        
+                 
+# 🔑 API Key de OpenWeatherMap (Gratis)
+API_KEY = "c4517e15f41a6204207bcc3b54dd7eb0"
+
+# 📌 Lista de ciudades en España con coordenadas
+cities = [
+    {"name": "Madrid", "lat": 40.4168, "lon": -3.7038},
+    {"name": "Barcelona", "lat": 41.3874, "lon": 2.1686},
+    {"name": "Valencia", "lat": 39.4699, "lon": -0.3763},
+    {"name": "Sevilla", "lat": 37.3886, "lon": -5.9823},
+    {"name": "Bilbao", "lat": 43.263, "lon": -2.935},
+    {"name": "Zaragoza", "lat": 41.6488, "lon": -0.8891},
+    {"name": "Málaga", "lat": 36.7213, "lon": -4.4213},
+    {"name": "Granada", "lat": 37.1773, "lon": -3.5986}
+]
+
+# 🎯 Función para obtener el pronóstico por horas de OpenWeatherMap
+def get_hourly_forecast(city):
+    try:
+        url = f"http://api.openweathermap.org/data/2.5/forecast?lat={city['lat']}&lon={city['lon']}&appid={API_KEY}&units=metric&lang=es"
+        response = requests.get(url)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error obteniendo datos de {city['name']}: {e}")
+        return None
+
+# 🔥 Crear el mapa de España
+m = folium.Map(location=[40.0, -3.7], zoom_start=6)
+
+# 📌 Agregar marcadores para cada ciudad con pronóstico por horas
+for city in cities:
+    forecast_data = get_hourly_forecast(city)
+    if forecast_data:
+        forecast_list = forecast_data["list"][:5]  # Pronóstico de las próximas 5 horas
+        forecast_text = f"<b>{city['name']}</b><br>"
+        
+        for forecast in forecast_list:
+            dt_txt = forecast["dt_txt"]
+            temp = forecast["main"]["temp"]
+            description = forecast["weather"][0]["description"]
+            icon_code = forecast["weather"][0]["icon"]
+            icon_url = f"https://openweathermap.org/img/wn/{icon_code}.png"
+            
+            # Formatear la hora
+            time_obj = datetime.strptime(dt_txt, "%Y-%m-%d %H:%M:%S")
+            time_formatted = time_obj.strftime("%d %b %H:%M")
+            
+            forecast_text += f"🕒 {time_formatted} - {temp}°C, {description.capitalize()}<br>"
+            forecast_text += f"<img src='{icon_url}' width='30'><br>"
+
+        folium.Marker(
+            [city["lat"], city["lon"]],
+            popup=folium.Popup(forecast_text, max_width=300),
+            tooltip=f"{city['name']} (Click para ver el clima)"
+        ).add_to(m)
+
+# 🌍 Mostrar el mapa en Streamlit
+st.subheader("Weather Forecast in Spain")
+try:
+    folium_static(m)
+except Exception as e:
+    st.error(f"Error al renderizar el mapa: {e}")   
 
 # Función para obtener datos de avena y aluminio
 @st.cache_data
